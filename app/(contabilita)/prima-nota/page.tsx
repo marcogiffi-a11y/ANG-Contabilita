@@ -439,17 +439,15 @@ export default function PrimaNotaPage() {
       )}
 
       <div style={{ padding: '14px 24px 0' }}>
-        {/* Toolbar */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input value={cerca} onChange={e => setCerca(e.target.value)} placeholder="🔍  Cerca..."
-            style={{ width: 190, padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }} />
 
-          {/* Anno */}
+        {/* Riga 1: Ricerca + filtri + importa */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input value={cerca} onChange={e => setCerca(e.target.value)} placeholder="🔍  Cerca..."
+            style={{ width: 180, padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }} />
           <select value={filtroAnno} onChange={e => setFiltroAnno(e.target.value)}
             style={{ padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12, fontWeight: 600 }}>
             {ANNI.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
-
           {[
             { val: filtroFlusso, set: setFiltroFlusso, opts: [['','Tutti i flussi'],['ENTRATE','Entrate'],['USCITE','Uscite'],['GIROCONTO','Giroconto']] },
             { val: filtroCassa, set: setFiltroCassa, opts: [['','Tutte le casse'],['FIDEURAM','Fideuram'],['UNICREDIT','Unicredit'],['REVOLUT ATHENA','Revolut']] },
@@ -459,47 +457,49 @@ export default function PrimaNotaPage() {
               {f.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           ))}
-
-          <div style={{ flex: 1 }} />
-
-          {selezionati.size > 0 && (
-            <button onClick={eliminaSelezionati}
-              style={{ padding: '7px 14px', fontSize: 12, fontWeight: 600, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 7, cursor: 'pointer' }}>
-              🗑 Elimina {selezionati.size} selezionati
-            </button>
-          )}
-          <button className="btn-secondary" onClick={() => { setForm(FORM_VUOTO); setShowForm(true) }} style={{ fontSize: 12 }}>
-            ➕ Aggiungi
-          </button>
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileImport} style={{ display: 'none' }} />
           <button className="btn-primary" onClick={() => fileRef.current?.click()} disabled={importing}>
-            {importing ? `⏳ ${step}` : '📥 Importa'}
+            {importing ? `⏳ ${step}` : '📥 Importa Estratto Conto'}
           </button>
         </div>
 
-        {/* KPI + mesi */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Riga 2: KPI grandi */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
           {[
             { label: 'Entrate', val: totEnt, color: '#16a34a', bg: '#dcfce7', fmt: true },
             { label: 'Uscite', val: totUsc, color: '#dc2626', bg: '#fee2e2', fmt: true },
-            { label: 'Saldo', val: totEnt - totUsc, color: totEnt - totUsc >= 0 ? '#16a34a' : '#dc2626', bg: totEnt - totUsc >= 0 ? '#dcfce7' : '#fee2e2', fmt: true },
-            { label: 'Mov.', val: filtrati.length, color: '#1d3a6b', bg: '#e8eef7', fmt: false },
+            { label: 'Saldo netto', val: totEnt - totUsc, color: totEnt - totUsc >= 0 ? '#16a34a' : '#dc2626', bg: totEnt - totUsc >= 0 ? '#dcfce7' : '#fee2e2', fmt: true },
+            { label: 'Movimenti', val: filtrati.length, color: '#1d3a6b', bg: '#e8eef7', fmt: false },
           ].map((t: any) => (
-            <div key={t.label} style={{ padding: '6px 12px', borderRadius: 8, background: t.bg, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 9, color: t.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>{t.label}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: t.color, whiteSpace: 'nowrap' }}>{t.fmt ? fmt(t.val) : t.val}</span>
+            <div key={t.label} style={{ padding: '10px 18px', borderRadius: 9, background: t.bg }}>
+              <div style={{ fontSize: 10, color: t.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>{t.label}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: t.color, whiteSpace: 'nowrap' }}>{t.fmt ? fmt(t.val) : t.val}</div>
             </div>
           ))}
+        </div>
 
-          <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 4px' }} />
+        {/* Riga 3: bottoni azione + filtri mese */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn-secondary" onClick={() => { setForm(FORM_VUOTO); setShowForm(true) }}
+            style={{ fontSize: 12, padding: '6px 14px' }}>
+            ➕ Aggiungi
+          </button>
+          {selezionati.size > 0 && (
+            <button onClick={eliminaSelezionati}
+              style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 7, cursor: 'pointer' }}>
+              🗑 Elimina {selezionati.size} selezionati
+            </button>
+          )}
+
+          <div style={{ width: 1, height: 22, background: 'var(--border)', margin: '0 4px' }} />
 
           <button onClick={() => setFiltroMese('')}
-            style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: 'none', background: filtroMese === '' ? 'var(--accent)' : '#f1f5f9', color: filtroMese === '' ? 'white' : 'var(--muted)' }}>
+            style={{ padding: '5px 14px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: 'none', background: filtroMese === '' ? 'var(--accent)' : '#f1f5f9', color: filtroMese === '' ? 'white' : 'var(--muted)' }}>
             Tutti
           </button>
           {MESI.map(m => (
             <button key={m} onClick={() => setFiltroMese(filtroMese === m ? '' : m)}
-              style={{ padding: '4px 10px', fontSize: 11, fontWeight: 500, borderRadius: 20, cursor: 'pointer', border: 'none', background: filtroMese === m ? 'var(--accent)' : '#f1f5f9', color: filtroMese === m ? 'white' : 'var(--muted)' }}>
+              style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, borderRadius: 20, cursor: 'pointer', border: 'none', background: filtroMese === m ? 'var(--accent)' : '#f1f5f9', color: filtroMese === m ? 'white' : 'var(--muted)' }}>
               {m}
             </button>
           ))}
@@ -518,7 +518,7 @@ export default function PrimaNotaPage() {
               {movimenti.length === 0 ? 'Nessun movimento — importa o aggiungi manualmente' : 'Nessun movimento corrisponde ai filtri'}
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
+            <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
