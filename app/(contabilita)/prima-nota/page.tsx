@@ -60,7 +60,7 @@ export default function PrimaNotaPage() {
 
   async function fetchMovimenti() {
     setLoading(true)
-    let q = (supabase as any).from('prima_nota').select('*').eq('anno', annoCorrente).order('data_contabile', { ascending: false }).limit(200)
+    let q = (supabase as any).from('prima_nota').select('*').eq('anno', annoCorrente).order('data_contabile', { ascending: false }).limit(5000)
     if (filtroFlusso) q = q.eq('flusso', filtroFlusso)
     if (filtroCassa) q = q.eq('cassa', filtroCassa)
     if (filtroMese) q = q.eq('mese', filtroMese)
