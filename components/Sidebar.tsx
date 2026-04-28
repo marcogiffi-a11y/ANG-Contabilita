@@ -6,6 +6,7 @@ const NAV = [
   { href: '/dashboard', icon: '◈', label: 'Dashboard' },
   { href: '/prima-nota', icon: '≡', label: 'Prima Nota' },
   { href: '/fatture', icon: '◻', label: 'Fatture' },
+  { href: '/legenda', icon: '📋', label: 'Legenda' },
 ]
 
 export default function Sidebar() {
