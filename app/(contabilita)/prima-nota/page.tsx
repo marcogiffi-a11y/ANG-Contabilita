@@ -315,10 +315,10 @@ export default function PrimaNotaPage() {
 
       <div style={{ padding: '16px 24px 0' }}>
         {/* Toolbar */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={cerca} onChange={e => setCerca(e.target.value)}
-            placeholder="🔍  Cerca descrizione, categoria, progetto..."
-            style={{ flex: 1, minWidth: 220, padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }} />
+            placeholder="🔍  Cerca..."
+            style={{ width: 200, padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }} />
           {[
             { val: filtroFlusso, set: setFiltroFlusso, opts: [['','Tutti i flussi'],['ENTRATE','Entrate'],['USCITE','Uscite'],['GIROCONTO','Giroconto']] },
             { val: filtroCassa, set: setFiltroCassa, opts: [['','Tutte le casse'],['FIDEURAM','Fideuram'],['UNICREDIT','Unicredit'],['REVOLUT ATHENA','Revolut']] },
@@ -334,17 +334,17 @@ export default function PrimaNotaPage() {
           </button>
         </div>
 
-        {/* KPI */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        {/* KPI compatti a sinistra */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           {[
-            { label: 'Entrate', val: totEnt, color: 'var(--green)', bg: 'var(--green-light)', fmt: true },
-            { label: 'Uscite', val: totUsc, color: 'var(--red)', bg: 'var(--red-light)', fmt: true },
-            { label: 'Saldo netto', val: totEnt - totUsc, color: totEnt - totUsc >= 0 ? 'var(--green)' : 'var(--red)', bg: totEnt - totUsc >= 0 ? 'var(--green-light)' : 'var(--red-light)', fmt: true },
-            { label: 'Movimenti', val: filtrati.length, color: 'var(--text)', bg: '#f1f5f9', fmt: false },
+            { label: 'Entrate', val: totEnt, color: '#16a34a', bg: '#dcfce7', fmt: true },
+            { label: 'Uscite', val: totUsc, color: '#dc2626', bg: '#fee2e2', fmt: true },
+            { label: 'Saldo', val: totEnt - totUsc, color: totEnt - totUsc >= 0 ? '#16a34a' : '#dc2626', bg: totEnt - totUsc >= 0 ? '#dcfce7' : '#fee2e2', fmt: true },
+            { label: 'Mov.', val: filtrati.length, color: '#1d3a6b', bg: '#e8eef7', fmt: false },
           ].map((t: any) => (
-            <div key={t.label} style={{ padding: '9px 14px', borderRadius: 8, background: t.bg, flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: 9, color: t.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 3 }}>{t.label}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: t.color }}>{t.fmt ? fmt(t.val) : t.val}</div>
+            <div key={t.label} style={{ padding: '7px 14px', borderRadius: 8, background: t.bg, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 9, color: t.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{t.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: t.color, whiteSpace: 'nowrap' }}>{t.fmt ? fmt(t.val) : t.val}</div>
             </div>
           ))}
         </div>
