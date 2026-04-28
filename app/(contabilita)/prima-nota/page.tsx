@@ -2,12 +2,24 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Topbar from '@/components/Topbar'
-import * as XLSX from 'xlsx'
 
 const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n)
 const fmtData = (d: string) => d ? new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'
 
 const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic']
+
+function getMese(dateStr: string): string {
+  return MESI[parseInt(dateStr.split('-')[1]) - 1]
+}
+function getAnno(dateStr: string): number {
+  return parseInt(dateStr.split('-')[0])
+}
+function getTrimestre(mese: string): string {
+  if (['Gen','Feb','Mar'].includes(mese)) return 'Q1'
+  if (['Apr','Mag','Giu'].includes(mese)) return 'Q2'
+  if (['Lug','Ago','Set'].includes(mese)) return 'Q3'
+  return 'Q4'
+}
 
 export default function PrimaNotaPage() {
   const supabase = createClient()
@@ -45,7 +57,6 @@ export default function PrimaNotaPage() {
     setLoading(false)
   }
 
-  // Import estratto conto Excel
   async function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -54,19 +65,22 @@ export default function PrimaNotaPage() {
     showToast('📊 Lettura file Excel...')
 
     try {
+      // Import dinamico per evitare problemi SSR
+      const XLSX = await import('xlsx')
+
       const buffer = await file.arrayBuffer()
       const wb = XLSX.read(buffer, { type: 'array' })
       const ws = wb.Sheets[wb.SheetNames[0]]
       const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1 })
 
-      // Cerca la riga header
+      // Cerca riga header
       let headerRow = -1
       let headers: string[] = []
       for (let i = 0; i < Math.min(10, rows.length); i++) {
-        const row = rows[i].map((c: any) => String(c || '').toLowerCase())
+        const row = rows[i].map((c: any) => String(c || '').toLowerCase().trim())
         if (row.some((c: string) => c.includes('data') || c.includes('importo') || c.includes('descrizione'))) {
           headerRow = i
-          headers = rows[i].map((c: any) => String(c || '').toLowerCase().trim())
+          headers = row
           break
         }
       }
@@ -77,10 +91,9 @@ export default function PrimaNotaPage() {
         return
       }
 
-      // Mappa colonne
-      const idxData = headers.findIndex(h => h.includes('data') && (h.includes('contabile') || h.includes('operazione') || h === 'data'))
-      const idxImporto = headers.findIndex(h => h.includes('importo') || h.includes('dare/avere') || h.includes('accrediti') || h.includes('amount'))
-      const idxDesc = headers.findIndex(h => h.includes('descrizione') || h.includes('causale') || h.includes('description'))
+      const idxData = headers.findIndex(h => h.includes('data') && !h.includes('valuta'))
+      const idxImporto = headers.findIndex(h => h.includes('importo') || h.includes('dare') || h.includes('avere'))
+      const idxDesc = headers.findIndex(h => h.includes('descrizione') || h.includes('causale'))
       const idxValuta = headers.findIndex(h => h.includes('valuta'))
 
       const movimentiImport: any[] = []
@@ -89,47 +102,50 @@ export default function PrimaNotaPage() {
         const row = rows[i]
         if (!row || row.length === 0) continue
 
-        const importoRaw = row[idxImporto]
-        const importo = typeof importoRaw === 'number' ? importoRaw : parseFloat(String(importoRaw || '0').replace(',', '.').replace(/[^0-9.-]/g, ''))
+        const importoRaw = row[idxImporto >= 0 ? idxImporto : 0]
+        const importo = typeof importoRaw === 'number'
+          ? importoRaw
+          : parseFloat(String(importoRaw || '0').replace(',', '.').replace(/[^0-9.-]/g, ''))
 
         if (isNaN(importo) || importo === 0) continue
 
-        const dataRaw = row[idxData]
+        const dataRaw = row[idxData >= 0 ? idxData : 0]
         let dataContabile: string | null = null
+
         if (dataRaw) {
           if (typeof dataRaw === 'number') {
-            // Excel serial date
             const date = XLSX.SSF.parse_date_code(dataRaw)
             dataContabile = `${date.y}-${String(date.m).padStart(2,'0')}-${String(date.d).padStart(2,'0')}`
           } else {
-            const parts = String(dataRaw).split('/')
+            const s = String(dataRaw).trim()
+            const parts = s.split(/[\/\-]/)
             if (parts.length === 3) {
-              dataContabile = `${parts[2].length === 2 ? '20' + parts[2] : parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`
+              const y = parts[2].length === 2 ? '20' + parts[2] : parts[2]
+              dataContabile = `${y}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`
             }
           }
         }
 
-        const mese = dataContabile ? MESI[parseInt(dataContabile.split('-')[1]) - 1] : null
-        const anno = dataContabile ? parseInt(dataContabile.split('-')[0]) : null
-        const trimestre = anno && mese ? (['Gen','Feb','Mar'].includes(mese) ? 'Q1' : ['Apr','Mag','Giu'].includes(mese) ? 'Q2' : ['Lug','Ago','Set'].includes(mese) ? 'Q3' : 'Q4') : null
+        const mese = dataContabile ? getMese(dataContabile) : null
+        const anno = dataContabile ? getAnno(dataContabile) : null
+        const trimestre = mese ? getTrimestre(mese) : null
 
         movimentiImport.push({
           trimestre,
           mese,
           anno,
           data_contabile: dataContabile,
-          data_valuta: idxValuta >= 0 ? dataContabile : null,
+          data_valuta: idxValuta >= 0 && row[idxValuta] ? dataContabile : null,
           importo,
-          descrizione: row[idxDesc] ? String(row[idxDesc]).substring(0, 500) : null,
-          mittente_fornitore: null,
+          descrizione: row[idxDesc >= 0 ? idxDesc : 0] ? String(row[idxDesc >= 0 ? idxDesc : 0]).substring(0, 500) : null,
           flusso: importo > 0 ? 'ENTRATE' : 'USCITE',
-          cassa: 'FIDEURAM', // default, cambiabile
+          cassa: 'FIDEURAM',
           youdox: false,
           ai_categorizzato: false,
         })
       }
 
-      showToast(`📤 ${movimentiImport.length} movimenti letti, categorizzazione AI in corso...`)
+      showToast(`🤖 ${movimentiImport.length} movimenti letti — categorizzazione AI...`)
       setCategorizzando(true)
 
       // Categorizzazione AI
@@ -140,7 +156,6 @@ export default function PrimaNotaPage() {
       })
       const { risultati } = await res.json()
 
-      // Merge risultati AI
       const movimentiFinali = movimentiImport.map((m, idx) => {
         const ai = risultati?.find((r: any) => r.indice === idx)
         return {
@@ -157,9 +172,8 @@ export default function PrimaNotaPage() {
       })
 
       setCategorizzando(false)
-      showToast(`💾 Salvataggio ${movimentiFinali.length} movimenti...`)
+      showToast(`💾 Salvataggio...`)
 
-      // Salva su Supabase in batch da 50
       let inseriti = 0
       for (let i = 0; i < movimentiFinali.length; i += 50) {
         const batch = movimentiFinali.slice(i, i + 50)
@@ -167,7 +181,7 @@ export default function PrimaNotaPage() {
         if (!error) inseriti += batch.length
       }
 
-      showToast(`✅ ${inseriti} movimenti importati e categorizzati!`)
+      showToast(`✅ ${inseriti} movimenti importati!`)
       await fetchMovimenti()
 
     } catch (err: any) {
@@ -200,7 +214,6 @@ export default function PrimaNotaPage() {
     <>
       <Topbar title="Prima Nota" subtitle={`${movimenti.length} movimenti ${annoCorrente}`} />
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 999,
@@ -221,7 +234,6 @@ export default function PrimaNotaPage() {
             style={{ flex: 1, minWidth: 220, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white' }}
           />
 
-          {/* Filtri */}
           {[
             { val: filtroFlusso, set: setFiltroFlusso, opts: [['','Tutti i flussi'],['ENTRATE','Entrate'],['USCITE','Uscite']] },
             { val: filtroCassa, set: setFiltroCassa, opts: [['','Tutte le casse'],['FIDEURAM','Fideuram'],['UNICREDIT','Unicredit']] },
@@ -233,35 +245,29 @@ export default function PrimaNotaPage() {
             </select>
           ))}
 
-          {/* Import */}
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileImport} style={{ display: 'none' }} />
           <button
             className="btn-primary"
             onClick={() => fileRef.current?.click()}
             disabled={importing || categorizzando}
           >
-            {importing || categorizzando ? (
-              <>{categorizzando ? '🤖 AI in corso...' : '⏳ Import...'}</>
-            ) : '📥 Importa Estratto Conto'}
+            {categorizzando ? '🤖 AI in corso...' : importing ? '⏳ Import...' : '📥 Importa Estratto Conto'}
           </button>
         </div>
 
         {/* Totali */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           {[
-            { label: 'Entrate filtrate', val: totaleEntrate, color: 'var(--green)', bg: 'var(--green-light)' },
-            { label: 'Uscite filtrate', val: totaleUscite, color: 'var(--red)', bg: 'var(--red-light)' },
+            { label: 'Entrate', val: totaleEntrate, color: 'var(--green)', bg: 'var(--green-light)' },
+            { label: 'Uscite', val: totaleUscite, color: 'var(--red)', bg: 'var(--red-light)' },
             { label: 'Saldo netto', val: totaleEntrate - totaleUscite, color: totaleEntrate - totaleUscite >= 0 ? 'var(--green)' : 'var(--red)', bg: totaleEntrate - totaleUscite >= 0 ? 'var(--green-light)' : 'var(--red-light)' },
-          ].map(t => (
+            { label: 'Movimenti', val: filtrati.length, color: 'var(--text)', bg: '#f1f5f9', noFmt: true },
+          ].map((t: any) => (
             <div key={t.label} style={{ padding: '10px 16px', borderRadius: 8, background: t.bg, flex: 1, textAlign: 'center' }}>
               <div style={{ fontSize: 10, color: t.color, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{t.label}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: t.color }}>{fmt(t.val)}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: t.color }}>{t.noFmt ? t.val : fmt(t.val)}</div>
             </div>
           ))}
-          <div style={{ padding: '10px 16px', borderRadius: 8, background: '#f1f5f9', flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Movimenti</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{filtrati.length}</div>
-          </div>
         </div>
 
         {/* Tabella */}
@@ -310,14 +316,12 @@ export default function PrimaNotaPage() {
                             <div style={{ fontWeight: 500 }}>{m.macro_categoria}</div>
                             <div style={{ fontSize: 10, color: 'var(--muted)' }}>{m.voci_bilancio}</div>
                           </div>
-                        ) : (
-                          <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>—</span>
-                        )}
+                        ) : <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>—</span>}
                       </td>
 
                       <td style={{ padding: '10px 14px', maxWidth: 160 }}>
                         {m.nome_progetto ? (
-                          <span style={{ fontSize: 11, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 20, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: 150 }}>
+                          <span style={{ fontSize: 11, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 20, display: 'block', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {m.nome_progetto}
                           </span>
                         ) : <span style={{ color: 'var(--muted)' }}>—</span>}
