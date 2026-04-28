@@ -22,9 +22,13 @@ export async function POST(req: NextRequest) {
         role: 'user',
         content: [
           {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: base64 }
-          },
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: 'image/jpeg',
+              data: base64
+            }
+          } as any,
           {
             type: 'text',
             text: `Analizza questa fattura italiana ed estrai i dati. 
@@ -49,7 +53,14 @@ Nessun testo aggiuntivo, solo JSON.`
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const clean = text.replace(/```json|```/g, '').trim()
-    const dati = JSON.parse(clean)
+
+    let dati
+    try {
+      dati = JSON.parse(clean)
+    } catch {
+      // Se il parsing fallisce, restituisci dati vuoti
+      dati = { tipo: 'PASSIVA' }
+    }
 
     return NextResponse.json({ dati })
 
