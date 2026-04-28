@@ -9,10 +9,21 @@ const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov',
 
 function parseData(val: any): string | null {
   if (!val) return null
+  if (val instanceof Date) {
+    const d = val as Date
+    return d.toISOString().substring(0, 10)
+  }
   const s = String(val).trim()
+  if (!s || s === 'null') return null
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.substring(0, 10)
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10)
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) { const p = s.split('/'); return `${p[2]}-${p[1]}-${p[0]}` }
-  if (/^\d{2}-\d{2}-\d{4}/.test(s)) { const p = s.split('-'); return `${p[2]}-${p[1]}-${p[0]}` }
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) { const p = s.split('/'); return p[2]+'-'+p[1]+'-'+p[0] }
+  if (/^\d{2}-\d{2}-\d{4}/.test(s)) { const p = s.split('-'); return p[2]+'-'+p[1]+'-'+p[0] }
+  const n = parseFloat(s)
+  if (!isNaN(n) && n > 40000) {
+    const d = new Date(Math.round((n - 25569) * 86400 * 1000))
+    return d.toISOString().substring(0, 10)
+  }
   return null
 }
 function getMese(d: string) { return MESI[parseInt(d.split('-')[1]) - 1] }
