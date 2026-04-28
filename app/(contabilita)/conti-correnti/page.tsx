@@ -84,10 +84,18 @@ export default function ContiCorrentiPage() {
   }
 
   async function disattivaConto(id: string) {
-    if (!confirm('Disattivare questo conto?')) return
+    if (!confirm('Disattivare questo conto? Rimarrà nello storico ma non apparirà più.')) return
     await (supabase as any).from('conti_correnti').update({ attivo: false }).eq('id', id)
     await loadAll()
     showToast('✅ Conto disattivato')
+  }
+
+  async function eliminaConto(id: string, nome: string) {
+    if (!confirm(`ATTENZIONE: eliminare definitivamente il conto "${nome}"?\nQuesta operazione non può essere annullata.`)) return
+    await (supabase as any).from('saldi_iniziali').delete().eq('conto_id', id)
+    await (supabase as any).from('conti_correnti').delete().eq('id', id)
+    await loadAll()
+    showToast('✅ Conto eliminato')
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 4000) }
@@ -207,10 +215,16 @@ export default function ContiCorrentiPage() {
                       {conto.banca && <div style={{ fontSize: 12, color: '#64748b' }}>{conto.banca}</div>}
                       {conto.iban && <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>{conto.iban}</div>}
                     </div>
-                    <button onClick={() => disattivaConto(conto.id)}
-                      style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 12, padding: '4px 8px' }}>
-                      Disattiva
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => disattivaConto(conto.id)}
+                        style={{ background: 'none', border: '1px solid #e5e5e2', borderRadius: 6, color: '#64748b', cursor: 'pointer', fontSize: 11, padding: '4px 10px' }}>
+                        Disattiva
+                      </button>
+                      <button onClick={() => eliminaConto(conto.id, conto.nome)}
+                        style={{ background: 'none', border: '1px solid #fee2e2', borderRadius: 6, color: '#dc2626', cursor: 'pointer', fontSize: 11, padding: '4px 10px' }}>
+                        Elimina
+                      </button>
+                    </div>
                   </div>
 
                   {/* Dati conto */}
