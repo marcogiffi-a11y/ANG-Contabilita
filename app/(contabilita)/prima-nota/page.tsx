@@ -167,9 +167,12 @@ export default function PrimaNotaPage() {
         if (impRaw !== null) {
           importo = typeof impRaw === 'number' ? impRaw : parseFloat(String(impRaw).replace(',', '.').replace(/[^0-9.-]/g, ''))
         } else if (mp.importo_dare !== undefined || mp.importo_avere !== undefined) {
-          const dare = mp.importo_dare >= 0 ? parseFloat(String(row[mp.importo_dare] || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) : 0
-          const avere = mp.importo_avere >= 0 ? parseFloat(String(row[mp.importo_avere] || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) : 0
-          importo = avere - dare
+          // Fideuram: Addebiti già negativi, Accrediti positivi → si sommano
+          const dare = (mp.importo_dare !== null && mp.importo_dare >= 0 && row[mp.importo_dare] !== null && row[mp.importo_dare] !== undefined)
+            ? parseFloat(String(row[mp.importo_dare]).replace(',', '.').replace(/[^0-9.-]/g, '')) : 0
+          const avere = (mp.importo_avere !== null && mp.importo_avere >= 0 && row[mp.importo_avere] !== null && row[mp.importo_avere] !== undefined)
+            ? parseFloat(String(row[mp.importo_avere]).replace(',', '.').replace(/[^0-9.-]/g, '')) : 0
+          importo = (isNaN(avere) ? 0 : avere) + (isNaN(dare) ? 0 : dare)
         }
         if (isNaN(importo)) importo = 0
 
@@ -518,7 +521,7 @@ export default function PrimaNotaPage() {
               {movimenti.length === 0 ? 'Nessun movimento — importa o aggiungi manualmente' : 'Nessun movimento corrisponde ai filtri'}
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
+            <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)', scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
