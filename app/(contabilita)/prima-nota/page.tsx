@@ -521,7 +521,8 @@ export default function PrimaNotaPage() {
               {movimenti.length === 0 ? 'Nessun movimento — importa o aggiungi manualmente' : 'Nessun movimento corrisponde ai filtri'}
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)', scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
+            <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}
+              onScroll={e => { const mirror = document.getElementById('scroll-mirror'); if(mirror) mirror.scrollLeft = (e.target as HTMLDivElement).scrollLeft }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
@@ -584,6 +585,12 @@ export default function PrimaNotaPage() {
             </div>
           )}
         </div>
+        {/* Scrollbar orizzontale mirror visibile */}
+        <div id="scroll-mirror" style={{ overflowX: 'auto', overflowY: 'hidden', height: 16, marginTop: 0, borderTop: '1px solid var(--border)' }}
+          onScroll={e => { const tbl = document.getElementById('tbl-scroll'); if(tbl) tbl.scrollLeft = (e.target as HTMLDivElement).scrollLeft }}>
+          <div style={{ width: COLS.reduce((s, c) => s + c.w, 0) + 'px', height: 1 }} />
+        </div>
+
         {filtrati.length > 0 && (
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
             <span>{selezionati.size > 0 && `${selezionati.size} selezionati · `}{filtrati.length} di {movimenti.length} movimenti</span>
