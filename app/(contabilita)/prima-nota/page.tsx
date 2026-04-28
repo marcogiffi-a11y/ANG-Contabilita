@@ -9,21 +9,28 @@ const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov',
 
 function parseData(val: any): string | null {
   if (!val) return null
-  if (val instanceof Date) {
-    const d = val as Date
-    return d.toISOString().substring(0, 10)
-  }
+  if (val instanceof Date) return (val as Date).toISOString().substring(0, 10)
   const s = String(val).trim()
-  if (!s || s === 'null') return null
+  if (!s || s === 'null' || s === 'undefined') return null
+  // ISO datetime
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.substring(0, 10)
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10)
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) { const p = s.split('/'); return p[2]+'-'+p[1]+'-'+p[0] }
-  if (/^\d{2}-\d{2}-\d{4}/.test(s)) { const p = s.split('-'); return p[2]+'-'+p[1]+'-'+p[0] }
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  // dd/mm/yyyy
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) { const p = s.split('/'); return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0') }
+  // dd-mm-yyyy
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)) { const p = s.split('-'); return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0') }
+  // Excel serial number
   const n = parseFloat(s)
-  if (!isNaN(n) && n > 40000) {
-    const d = new Date(Math.round((n - 25569) * 86400 * 1000))
+  if (!isNaN(n) && n > 40000 && n < 60000) {
+    const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000)
     return d.toISOString().substring(0, 10)
   }
+  // Prova a parsare qualsiasi altra cosa come Date
+  try {
+    const d = new Date(s)
+    if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d.toISOString().substring(0, 10)
+  } catch { return null }
   return null
 }
 function getMese(d: string) { return MESI[parseInt(d.split('-')[1]) - 1] }
@@ -71,7 +78,7 @@ export default function PrimaNotaPage() {
       setStep('📊 Lettura Excel...')
       const XLSX = await import('xlsx')
       const buffer = await file.arrayBuffer()
-      const wb = XLSX.read(buffer, { type: 'array', cellDates: true })
+      const wb = XLSX.read(buffer, { type: 'array', cellDates: false })
 
       const sheetName = wb.SheetNames.find((s: string) => s.includes('PN_') || s.includes('Prima') || s.includes('Movimenti')) || wb.SheetNames[0]
       const ws = wb.Sheets[sheetName]
