@@ -80,11 +80,14 @@ export default function PrimaNotaPage() {
       const buffer = await file.arrayBuffer()
       const wb = XLSX.read(buffer, { type: 'array', cellDates: false })
 
-      const sheetName = wb.SheetNames.find((s: string) => s.includes('PN_') || s.includes('Prima') || s.includes('Movimenti')) || wb.SheetNames[0]
+      // Cerca foglio PN_ING o primo disponibile
+      const sheetName = wb.SheetNames.find((s: string) => s === 'PN_ING') ||
+                        wb.SheetNames.find((s: string) => s.includes('PN_') || s.includes('Prima') || s.includes('Movimenti')) ||
+                        wb.SheetNames[0]
       const ws = wb.Sheets[sheetName]
-      const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' })
+      const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true })
 
-      // Trova header: prima riga con almeno 4 celle non vuote
+      // Trova riga header
       let headerRowIdx = 0
       for (let i = 0; i < Math.min(10, rows.length); i++) {
         const nonEmpty = rows[i].filter((c: any) => c !== null && c !== undefined && String(c).trim() !== '').length
@@ -94,64 +97,124 @@ export default function PrimaNotaPage() {
       const headerRow = rows[headerRowIdx].map((c: any) => String(c || '').trim())
       const dataRows = rows.slice(headerRowIdx + 1).filter((r: any[]) => r && r.some((c: any) => c !== null && c !== undefined && String(c).trim() !== ''))
 
-      // Claude analizza struttura
-      setStep('🤖 AI analizza struttura file...')
-      const mappingRes = await fetch('/api/import-excel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome_file: file.name, righe_header: headerRow, righe_dati: dataRows.slice(0, 3) })
-      })
-      const { mapping, error: mapErr } = await mappingRes.json()
-      if (mapErr) throw new Error(mapErr)
+      // Rileva formato PN_ING
+      const isPNFormat = headerRow.includes('Importo') && headerRow.includes('Flusso') && headerRow.includes('Data Contabile')
 
-      const mp = mapping.mapping
-      const cassaDefault = (mapping.cassa_default || 'FIDEURAM').toUpperCase()
+      let mp: any = {}
+      let cassaDefault = 'FIDEURAM'
 
-      // Trasforma righe
+      if (isPNFormat) {
+        setStep('📋 Formato PN_ING rilevato — import diretto...')
+        const h = headerRow
+        mp = {
+          importo: h.indexOf('Importo'),
+          data_contabile: h.indexOf('Data Contabile'),
+          data_valuta: h.indexOf('Data Valuta'),
+          descrizione: h.indexOf('Descrizione'),
+          mittente_fornitore: h.indexOf('Mittente/Fornitore'),
+          cliente_destinatario: h.indexOf('Cliente/Destinatario'),
+          cassa: h.indexOf('CASSA'),
+          flusso: h.indexOf('Flusso'),
+          attivita: h.indexOf('Attività'),
+          nome_progetto: h.indexOf('Nome Progetto'),
+          tipo_attivita: h.indexOf('Tipo di Attività'),
+          portafoglio: h.indexOf('Portafoglio'),
+          voci_bilancio: h.indexOf('Voci di Bilancio'),
+          macro_categoria: h.indexOf('Macro Categoria'),
+          spesa_societaria: h.indexOf('Spesa Societaria'),
+          youdox: h.indexOf('YouDox'),
+          canale: h.indexOf('Canale'),
+          n_protocollo: h.indexOf('N. Protocollo'),
+          mese_col: h.indexOf('Mesi'),
+          anno_col: h.indexOf('Anno'),
+          trimestre_col: h.indexOf('Trimestre'),
+          competenza_col: h.indexOf('Competenza'),
+        }
+      } else {
+        setStep('🤖 AI analizza struttura file...')
+        const mappingRes = await fetch('/api/import-excel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome_file: file.name, righe_header: headerRow, righe_dati: dataRows.slice(0, 3) })
+        })
+        const { mapping, error: mapErr } = await mappingRes.json()
+        if (mapErr) throw new Error(mapErr)
+        mp = mapping.mapping
+        cassaDefault = (mapping.cassa_default || 'FIDEURAM').toUpperCase()
+      }
+
       setStep('⚙️ Elaborazione dati...')
       const movimentiRaw: any[] = []
 
+      const excelToDate = (v: any): string | null => {
+        if (!v && v !== 0) return null
+        if (typeof v === 'number' && v > 40000) {
+          const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000)
+          return d.toISOString().substring(0, 10)
+        }
+        return parseData(v)
+      }
+
+      const getVal = (row: any[], idx: any) => {
+        if (idx === null || idx === undefined || idx < 0) return null
+        const v = row[idx]
+        return (v !== null && v !== undefined && String(v).trim() !== '') ? v : null
+      }
+
       for (const row of dataRows) {
         let importo = 0
-        if (mp.importo !== null && mp.importo !== undefined) {
-          const v = row[mp.importo]
-          importo = typeof v === 'number' ? v : parseFloat(String(v || '0').replace(',', '.').replace(/[^0-9.-]/g, ''))
-        } else if (mp.importo_dare !== null || mp.importo_avere !== null) {
-          const dare = mp.importo_dare !== null ? parseFloat(String(row[mp.importo_dare] || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) : 0
-          const avere = mp.importo_avere !== null ? parseFloat(String(row[mp.importo_avere] || '0').replace(',', '.').replace(/[^0-9.-]/g, '')) : 0
-          importo = avere - dare
+        const impRaw = getVal(row, mp.importo)
+        if (impRaw !== null) {
+          importo = typeof impRaw === 'number' ? impRaw : parseFloat(String(impRaw).replace(',', '.').replace(/[^0-9.-]/g, ''))
         }
-        if (isNaN(importo) || importo === 0) continue
+        if (isNaN(importo)) importo = 0
 
-        const dataContabile = parseData(mp.data_contabile !== null && mp.data_contabile !== undefined ? row[mp.data_contabile] : null)
-        const dataValuta = parseData(mp.data_valuta !== null && mp.data_valuta !== undefined ? row[mp.data_valuta] : null)
-        const mese = dataContabile ? getMese(dataContabile) : null
-        const anno = dataContabile ? getAnno(dataContabile) : null
-        const trimestre = mese ? getTrimestre(mese) : null
+        // Includi anche righe con importo 0 se hanno categoria o descrizione
+        const hasCat = getVal(row, mp.macro_categoria) || getVal(row, mp.voci_bilancio) || getVal(row, mp.descrizione)
+        if (importo === 0 && !hasCat) continue
 
-        const flussoRaw = mp.flusso !== null && mp.flusso !== undefined ? String(row[mp.flusso] || '').toUpperCase().trim() : null
-        const flusso = flussoRaw === 'ENTRATE' || flussoRaw === 'USCITE' || flussoRaw === 'GIROCONTO' ? flussoRaw : importo > 0 ? 'ENTRATE' : 'USCITE'
+        const dataContabile = excelToDate(getVal(row, mp.data_contabile))
+        const dataValuta = excelToDate(getVal(row, mp.data_valuta))
 
-        const get = (idx: any) => (idx !== null && idx !== undefined && row[idx] !== undefined && row[idx] !== null && String(row[idx]).trim() !== '') ? row[idx] : null
+        let mese: string | null = null
+        let anno: number | null = null
+        let trimestre: string | null = null
+
+        if (isPNFormat && mp.mese_col >= 0 && getVal(row, mp.mese_col)) {
+          mese = String(getVal(row, mp.mese_col))
+          anno = getVal(row, mp.anno_col) ? Number(getVal(row, mp.anno_col)) : null
+          trimestre = getVal(row, mp.trimestre_col) ? String(getVal(row, mp.trimestre_col)) : null
+        } else if (dataContabile) {
+          mese = getMese(dataContabile)
+          anno = getAnno(dataContabile)
+          trimestre = getTrimestre(mese)
+        }
+
+        const flussoRaw = getVal(row, mp.flusso) ? String(getVal(row, mp.flusso)).toUpperCase().trim() : null
+        const flusso = (flussoRaw === 'ENTRATE' || flussoRaw === 'USCITE' || flussoRaw === 'GIROCONTO') ? flussoRaw : importo > 0 ? 'ENTRATE' : 'USCITE'
+        const cassaVal = getVal(row, mp.cassa)
+        const cassa = cassaVal ? String(cassaVal).toUpperCase() : cassaDefault
 
         movimentiRaw.push({
           trimestre, mese, anno,
+          competenza: isPNFormat && mp.competenza_col >= 0 ? getVal(row, mp.competenza_col) : null,
           data_contabile: dataContabile,
           data_valuta: dataValuta,
-          importo, flusso,
-          descrizione: get(mp.descrizione) ? String(get(mp.descrizione)).substring(0, 500) : null,
-          mittente_fornitore: get(mp.mittente_fornitore) ? String(get(mp.mittente_fornitore)) : null,
-          cliente_destinatario: get(mp.cliente_destinatario) ? String(get(mp.cliente_destinatario)) : null,
-          cassa: get(mp.cassa) ? String(get(mp.cassa)).toUpperCase() : cassaDefault,
-          attivita: get(mp.attivita) ? String(get(mp.attivita)) : null,
-          nome_progetto: get(mp.nome_progetto) ? String(get(mp.nome_progetto)) : null,
-          portafoglio: get(mp.portafoglio) ? String(get(mp.portafoglio)) : null,
-          voci_bilancio: get(mp.voci_bilancio) ? String(get(mp.voci_bilancio)) : null,
-          macro_categoria: get(mp.macro_categoria) ? String(get(mp.macro_categoria)) : null,
-          spesa_societaria: get(mp.spesa_societaria) ? String(get(mp.spesa_societaria)) : null,
-          youdox: get(mp.youdox) ? (get(mp.youdox) === true || String(get(mp.youdox)).toLowerCase() === 'true') : false,
-          canale: get(mp.canale) ? String(get(mp.canale)) : null,
-          ai_categorizzato: false,
+          importo, flusso, cassa,
+          n_protocollo: isPNFormat && mp.n_protocollo >= 0 ? (getVal(row, mp.n_protocollo) ? String(getVal(row, mp.n_protocollo)) : null) : null,
+          descrizione: getVal(row, mp.descrizione) ? String(getVal(row, mp.descrizione)).substring(0, 500) : null,
+          mittente_fornitore: getVal(row, mp.mittente_fornitore) ? String(getVal(row, mp.mittente_fornitore)) : null,
+          cliente_destinatario: getVal(row, mp.cliente_destinatario) ? String(getVal(row, mp.cliente_destinatario)) : null,
+          attivita: getVal(row, mp.attivita) ? String(getVal(row, mp.attivita)) : null,
+          nome_progetto: getVal(row, mp.nome_progetto) ? String(getVal(row, mp.nome_progetto)) : null,
+          tipo_attivita: getVal(row, mp.tipo_attivita) ? String(getVal(row, mp.tipo_attivita)) : null,
+          portafoglio: getVal(row, mp.portafoglio) ? String(getVal(row, mp.portafoglio)) : null,
+          voci_bilancio: getVal(row, mp.voci_bilancio) ? String(getVal(row, mp.voci_bilancio)) : null,
+          macro_categoria: getVal(row, mp.macro_categoria) ? String(getVal(row, mp.macro_categoria)) : null,
+          spesa_societaria: getVal(row, mp.spesa_societaria) ? String(getVal(row, mp.spesa_societaria)) : null,
+          youdox: getVal(row, mp.youdox) === true || String(getVal(row, mp.youdox) || '').toLowerCase() === 'true' || String(getVal(row, mp.youdox) || '') === '1',
+          canale: getVal(row, mp.canale) ? String(getVal(row, mp.canale)) : null,
+          ai_categorizzato: !isPNFormat,
         })
       }
 
