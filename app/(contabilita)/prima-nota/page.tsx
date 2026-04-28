@@ -177,7 +177,7 @@ export default function PrimaNotaPage() {
       let inseriti = 0
       for (let i = 0; i < movimentiFinali.length; i += 50) {
         const batch = movimentiFinali.slice(i, i + 50)
-        const { error } = await supabase.from('prima_nota').insert(batch as any[])
+        const { error } = await (supabase as any).from('prima_nota').insert(batch)
         if (!error) inseriti += batch.length
       }
 
