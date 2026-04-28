@@ -270,25 +270,61 @@ export default function PrimaNotaPage() {
   const filtrati = movimenti.filter((m: any) => {
     if (!cerca) return true
     const q = cerca.toLowerCase()
-    return (m.descrizione || '').toLowerCase().includes(q) || (m.mittente_fornitore || '').toLowerCase().includes(q) || (m.macro_categoria || '').toLowerCase().includes(q) || (m.nome_progetto || '').toLowerCase().includes(q)
+    return (m.descrizione || '').toLowerCase().includes(q) ||
+      (m.mittente_fornitore || '').toLowerCase().includes(q) ||
+      (m.macro_categoria || '').toLowerCase().includes(q) ||
+      (m.nome_progetto || '').toLowerCase().includes(q) ||
+      (m.cliente_destinatario || '').toLowerCase().includes(q) ||
+      (m.voci_bilancio || '').toLowerCase().includes(q)
   })
 
-  const totEnt = filtrati.filter((m: any) => m.flusso === 'ENTRATE').reduce((s: number, m: any) => s + m.importo, 0)
-  const totUsc = filtrati.filter((m: any) => m.flusso === 'USCITE').reduce((s: number, m: any) => s + Math.abs(m.importo), 0)
+  const totEnt = filtrati.filter((m: any) => m.flusso === 'ENTRATE').reduce((s: number, m: any) => s + (m.importo || 0), 0)
+  const totUsc = filtrati.filter((m: any) => m.flusso === 'USCITE').reduce((s: number, m: any) => s + Math.abs(m.importo || 0), 0)
+
+  const COLS = [
+    { key: 'trimestre', label: 'Trimestre', w: 80 },
+    { key: 'mese', label: 'Mese', w: 60 },
+    { key: 'anno', label: 'Anno', w: 60 },
+    { key: 'competenza', label: 'Competenza', w: 90 },
+    { key: 'data_contabile', label: 'Data Contabile', w: 110 },
+    { key: 'youdox', label: 'YouDox', w: 70 },
+    { key: 'canale', label: 'Canale', w: 120 },
+    { key: 'voci_bilancio', label: 'Voci di Bilancio', w: 200 },
+    { key: 'macro_categoria', label: 'Macro Categoria', w: 160 },
+    { key: 'n_protocollo', label: 'N. Protocollo', w: 120 },
+    { key: 'data_valuta', label: 'Data Valuta', w: 100 },
+    { key: 'importo', label: 'Importo', w: 110 },
+    { key: 'descrizione', label: 'Descrizione', w: 240 },
+    { key: 'mittente_fornitore', label: 'Mittente/Fornitore', w: 180 },
+    { key: 'cliente_destinatario', label: 'Cliente/Destinatario', w: 180 },
+    { key: 'cassa', label: 'Cassa', w: 100 },
+    { key: 'spesa_societaria', label: 'Spesa Societaria', w: 180 },
+    { key: 'flusso', label: 'Flusso', w: 90 },
+    { key: 'attivita', label: 'Attività', w: 140 },
+    { key: 'nome_progetto', label: 'Nome Progetto', w: 200 },
+    { key: 'tipo_attivita', label: 'Tipo Attività', w: 160 },
+    { key: 'portafoglio', label: 'Portafoglio', w: 130 },
+  ]
 
   return (
     <>
       <Topbar title="Prima Nota" subtitle={`${movimenti.length} movimenti ${annoCorrente}`} />
-      {toast && <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 999, background: '#0f172a', color: 'white', padding: '12px 20px', borderRadius: 10, fontSize: 13, fontWeight: 500, boxShadow: '0 4px 20px rgba(0,0,0,.2)', maxWidth: 380 }}>{toast}</div>}
-      <div style={{ padding: 24 }}>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input value={cerca} onChange={e => setCerca(e.target.value)} placeholder="🔍  Cerca..." style={{ flex: 1, minWidth: 220, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white' }} />
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 999, background: '#0f172a', color: 'white', padding: '12px 20px', borderRadius: 10, fontSize: 13, fontWeight: 500, boxShadow: '0 4px 20px rgba(0,0,0,.2)', maxWidth: 380 }}>{toast}</div>
+      )}
+
+      <div style={{ padding: '16px 24px 0' }}>
+        {/* Toolbar */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input value={cerca} onChange={e => setCerca(e.target.value)}
+            placeholder="🔍  Cerca descrizione, categoria, progetto..."
+            style={{ flex: 1, minWidth: 220, padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }} />
           {[
-            { val: filtroFlusso, set: setFiltroFlusso, opts: [['','Tutti i flussi'],['ENTRATE','Entrate'],['USCITE','Uscite']] },
-            { val: filtroCassa, set: setFiltroCassa, opts: [['','Tutte le casse'],['FIDEURAM','Fideuram'],['UNICREDIT','Unicredit']] },
-            { val: filtroMese, set: setFiltroMese, opts: [['','Tutti i mesi'], ...MESI.map(m => [m, m])] },
+            { val: filtroFlusso, set: setFiltroFlusso, opts: [['','Tutti i flussi'],['ENTRATE','Entrate'],['USCITE','Uscite'],['GIROCONTO','Giroconto']] },
+            { val: filtroCassa, set: setFiltroCassa, opts: [['','Tutte le casse'],['FIDEURAM','Fideuram'],['UNICREDIT','Unicredit'],['REVOLUT ATHENA','Revolut']] },
           ].map((f, i) => (
-            <select key={i} value={f.val} onChange={e => f.set(e.target.value)} style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }}>
+            <select key={i} value={f.val} onChange={e => f.set(e.target.value)}
+              style={{ padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 7, background: 'white', fontSize: 12 }}>
               {f.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           ))}
@@ -298,60 +334,128 @@ export default function PrimaNotaPage() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        {/* KPI */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
           {[
             { label: 'Entrate', val: totEnt, color: 'var(--green)', bg: 'var(--green-light)', fmt: true },
             { label: 'Uscite', val: totUsc, color: 'var(--red)', bg: 'var(--red-light)', fmt: true },
             { label: 'Saldo netto', val: totEnt - totUsc, color: totEnt - totUsc >= 0 ? 'var(--green)' : 'var(--red)', bg: totEnt - totUsc >= 0 ? 'var(--green-light)' : 'var(--red-light)', fmt: true },
             { label: 'Movimenti', val: filtrati.length, color: 'var(--text)', bg: '#f1f5f9', fmt: false },
           ].map((t: any) => (
-            <div key={t.label} style={{ padding: '10px 16px', borderRadius: 8, background: t.bg, flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, color: t.color, fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{t.label}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: t.color }}>{t.fmt ? fmt(t.val) : t.val}</div>
+            <div key={t.label} style={{ padding: '9px 14px', borderRadius: 8, background: t.bg, flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 9, color: t.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 3 }}>{t.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: t.color }}>{t.fmt ? fmt(t.val) : t.val}</div>
             </div>
           ))}
         </div>
 
+        {/* Filtro mesi */}
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
+          <button
+            onClick={() => setFiltroMese('')}
+            style={{
+              padding: '4px 14px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: 'none',
+              background: filtroMese === '' ? 'var(--accent)' : '#f1f5f9',
+              color: filtroMese === '' ? 'white' : 'var(--muted)',
+            }}>
+            Anno {annoCorrente}
+          </button>
+          {MESI.map(m => (
+            <button key={m} onClick={() => setFiltroMese(filtroMese === m ? '' : m)}
+              style={{
+                padding: '4px 12px', fontSize: 11, fontWeight: 500, borderRadius: 20, cursor: 'pointer', border: 'none',
+                background: filtroMese === m ? 'var(--accent)' : '#f1f5f9',
+                color: filtroMese === m ? 'white' : 'var(--muted)',
+                transition: 'all .12s'
+              }}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tabella con scroll orizzontale */}
+      <div style={{ padding: '0 24px 24px' }}>
         <div className="card" style={{ overflow: 'hidden' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 48, color: 'var(--muted)' }}><div className="spinner" style={{ margin: '0 auto 12px' }} />Caricamento...</div>
+            <div style={{ textAlign: 'center', padding: 48, color: 'var(--muted)' }}>
+              <div className="spinner" style={{ margin: '0 auto 12px' }} />Caricamento...
+            </div>
           ) : filtrati.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontSize: 13 }}>
               {movimenti.length === 0 ? 'Nessun movimento — clicca "Importa Estratto Conto" per iniziare' : 'Nessun movimento corrisponde ai filtri'}
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
+              <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                    {['Data','Descrizione','Categoria','Progetto','Cassa','YouDox','Importo'].map(h => (
-                      <th key={h} style={{ padding: '9px 14px', textAlign: 'left', fontSize: 10, color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                  <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    {COLS.map(c => (
+                      <th key={c.key} style={{ width: c.w, minWidth: c.w, padding: '8px 10px', textAlign: 'left', fontSize: 9, color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {c.label}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtrati.map((m: any) => (
-                    <tr key={m.id} style={{ borderBottom: '1px solid #fafafa' }}
+                    <tr key={m.id} style={{ borderBottom: '1px solid #f5f5f5' }}
                       onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
-                      <td style={{ padding: '10px 14px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>{fmtData(m.data_contabile)}</td>
-                      <td style={{ padding: '10px 14px', maxWidth: 280 }}>
-                        <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.descrizione || '—'}</div>
-                        {m.mittente_fornitore && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{m.mittente_fornitore}</div>}
+                      {/* Trimestre */}
+                      <td style={{ padding: '8px 10px', color: 'var(--muted)', width: 80 }}>{m.trimestre || '—'}</td>
+                      {/* Mese */}
+                      <td style={{ padding: '8px 10px', width: 60 }}>{m.mese || '—'}</td>
+                      {/* Anno */}
+                      <td style={{ padding: '8px 10px', color: 'var(--muted)', width: 60 }}>{m.anno || '—'}</td>
+                      {/* Competenza */}
+                      <td style={{ padding: '8px 10px', color: 'var(--muted)', width: 90 }}>{m.competenza || '—'}</td>
+                      {/* Data Contabile */}
+                      <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', width: 110 }}>{fmtData(m.data_contabile)}</td>
+                      {/* YouDox */}
+                      <td style={{ padding: '8px 10px', textAlign: 'center', width: 70 }}>{m.youdox ? '✅' : '⬜'}</td>
+                      {/* Canale */}
+                      <td style={{ padding: '8px 10px', width: 120 }}>
+                        {m.canale ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: '#f1f5f9', color: 'var(--muted)', fontWeight: 700 }}>{m.canale}</span> : '—'}
                       </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        {m.macro_categoria ? <div><div style={{ fontWeight: 500 }}>{m.macro_categoria}</div><div style={{ fontSize: 10, color: 'var(--muted)' }}>{m.voci_bilancio}</div></div> : <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '10px 14px', maxWidth: 160 }}>
-                        {m.nome_progetto ? <span style={{ fontSize: 11, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 20, display: 'block', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nome_progetto}</span> : <span style={{ color: 'var(--muted)' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'var(--accent-light)', color: 'var(--accent)' }}>{m.cassa}</span>
-                      </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>{m.youdox ? '✅' : '⬜'}</td>
-                      <td style={{ padding: '10px 14px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap', color: m.flusso === 'ENTRATE' ? 'var(--green)' : 'var(--red)' }}>
+                      {/* Voci Bilancio */}
+                      <td style={{ padding: '8px 10px', width: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.voci_bilancio || '—'}</td>
+                      {/* Macro Categoria */}
+                      <td style={{ padding: '8px 10px', width: 160, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.macro_categoria || '—'}</td>
+                      {/* N. Protocollo */}
+                      <td style={{ padding: '8px 10px', color: 'var(--muted)', fontSize: 10, width: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.n_protocollo || '—'}</td>
+                      {/* Data Valuta */}
+                      <td style={{ padding: '8px 10px', color: 'var(--muted)', whiteSpace: 'nowrap', width: 100 }}>{fmtData(m.data_valuta)}</td>
+                      {/* Importo */}
+                      <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap', width: 110, color: m.flusso === 'ENTRATE' ? 'var(--green)' : 'var(--red)' }}>
                         {m.flusso === 'ENTRATE' ? '+' : ''}{fmt(m.importo)}
                       </td>
+                      {/* Descrizione */}
+                      <td style={{ padding: '8px 10px', width: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{m.descrizione || '—'}</td>
+                      {/* Mittente/Fornitore */}
+                      <td style={{ padding: '8px 10px', width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.mittente_fornitore || '—'}</td>
+                      {/* Cliente/Destinatario */}
+                      <td style={{ padding: '8px 10px', width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.cliente_destinatario || '—'}</td>
+                      {/* Cassa */}
+                      <td style={{ padding: '8px 10px', width: 100 }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'var(--accent-light)', color: 'var(--accent)' }}>{m.cassa || '—'}</span>
+                      </td>
+                      {/* Spesa Societaria */}
+                      <td style={{ padding: '8px 10px', width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{m.spesa_societaria || '—'}</td>
+                      {/* Flusso */}
+                      <td style={{ padding: '8px 10px', width: 90 }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: m.flusso === 'ENTRATE' ? 'var(--green-light)' : m.flusso === 'USCITE' ? 'var(--red-light)' : '#f1f5f9', color: m.flusso === 'ENTRATE' ? 'var(--green)' : m.flusso === 'USCITE' ? 'var(--red)' : 'var(--muted)' }}>{m.flusso || '—'}</span>
+                      </td>
+                      {/* Attività */}
+                      <td style={{ padding: '8px 10px', width: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.attivita || '—'}</td>
+                      {/* Nome Progetto */}
+                      <td style={{ padding: '8px 10px', width: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.nome_progetto ? <span style={{ fontSize: 10, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 20 }}>{m.nome_progetto}</span> : '—'}
+                      </td>
+                      {/* Tipo Attività */}
+                      <td style={{ padding: '8px 10px', width: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{m.tipo_attivita || '—'}</td>
+                      {/* Portafoglio */}
+                      <td style={{ padding: '8px 10px', width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.portafoglio || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -359,7 +463,11 @@ export default function PrimaNotaPage() {
             </div>
           )}
         </div>
-        {filtrati.length > 0 && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, textAlign: 'right' }}>{filtrati.length} di {movimenti.length} movimenti</div>}
+        {filtrati.length > 0 && (
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, textAlign: 'right' }}>
+            {filtrati.length} di {movimenti.length} movimenti
+          </div>
+        )}
       </div>
     </>
   )
