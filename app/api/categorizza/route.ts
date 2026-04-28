@@ -92,7 +92,9 @@ export async function POST(req: NextRequest) {
         let regolaMatch: any = null
 
         // Cerca corrispondenza nelle regole — prima exact match, poi partial
-        for (const [chiave, regola] of mappaRegole) {
+        const regoleArray = Array.from(mappaRegole.entries())
+        for (let ri = 0; ri < regoleArray.length; ri++) {
+          const [chiave, regola] = regoleArray[ri]
           if (chiave.length > 3 && (desc.includes(chiave) || mit.includes(chiave))) {
             regolaMatch = regola
             break
