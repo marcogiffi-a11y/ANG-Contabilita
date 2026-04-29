@@ -704,8 +704,14 @@ export default function PrimaNotaPage() {
               {movimenti.length === 0 ? 'Nessun movimento — importa o aggiungi manualmente' : 'Nessun movimento corrisponde ai filtri'}
             </div>
           ) : (
-            <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}
-              onScroll={e => { const mirror = document.getElementById('scroll-mirror'); if(mirror) mirror.scrollLeft = (e.target as HTMLDivElement).scrollLeft }}>
+            <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
+              <style>{`
+                #tbl-scroll::-webkit-scrollbar { height: 18px; width: 8px; }
+                #tbl-scroll::-webkit-scrollbar-track { background: #e2e8f0; }
+                #tbl-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 3px solid #e2e8f0; }
+                #tbl-scroll::-webkit-scrollbar-thumb:hover { background: #334155; }
+                #tbl-scroll::-webkit-scrollbar-corner { background: #e2e8f0; }
+              `}</style>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
@@ -765,19 +771,12 @@ export default function PrimaNotaPage() {
           )}
         </div>
 
-        {/* Scrollbar orizzontale — fissa in fondo, sempre visibile */}
-        <div id="scroll-mirror"
-          style={{ overflowX: 'scroll', overflowY: 'hidden', height: 18, marginTop: 2 }}
-          onScroll={e => { const tbl = document.getElementById('tbl-scroll'); if(tbl) tbl.scrollLeft = (e.target as HTMLDivElement).scrollLeft }}>
           <style>{`
-            #scroll-mirror::-webkit-scrollbar { height: 12px; }
-            #scroll-mirror::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 6px; }
-            #scroll-mirror::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; }
-            #scroll-mirror::-webkit-scrollbar-thumb:hover { background: #64748b; }
-            #tbl-scroll::-webkit-scrollbar { height: 0px; width: 0px; }
+            #tbl-scroll::-webkit-scrollbar { height: 20px; }
+            #tbl-scroll::-webkit-scrollbar-track { background: #cbd5e1; border-radius: 10px; }
+            #tbl-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; border: 3px solid #cbd5e1; }
+            #tbl-scroll::-webkit-scrollbar-thumb:hover { background: #1e293b; }
           `}</style>
-          <div style={{ width: COLS.reduce((s, c) => s + c.w, 0) + 'px', height: 1 }} />
-        </div>
 
         {filtrati.length > 0 && (
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
