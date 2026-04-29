@@ -250,7 +250,11 @@ export default function PrimaNotaPage() {
       const getVal = (row: any[], idx: any) => {
         if (idx === null || idx === undefined || idx < 0) return null
         const v = row[idx]
-        return (v !== null && v !== undefined && String(v).trim() !== '') ? v : null
+        if (v === null || v === undefined) return null
+        const s = String(v).trim()
+        // Ignora celle che contengono ancora una formula non calcolata
+        if (s === '' || s.startsWith('=')) return null
+        return v
       }
 
       for (const row of dataRows) {
