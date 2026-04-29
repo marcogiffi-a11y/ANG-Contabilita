@@ -151,11 +151,16 @@ export default function PrimaNotaPage() {
           const ai = risultati.find((r: any) => r.indice === j)
           if (ai && chunk[j].id) {
             await (supabase as any).from('prima_nota').update({
-              voci_bilancio:    ai.voci_bilancio   || null,
-              macro_categoria:  ai.macro_categoria  || null,
-              attivita:         ai.attivita         || null,
-              nome_progetto:    ai.nome_progetto    || null,
-              youdox:           ai.youdox           || false,
+              voci_bilancio:    ai.voci_bilancio    || null,
+              macro_categoria:  ai.macro_categoria   || null,
+              attivita:         ai.attivita          || null,
+              nome_progetto:    ai.nome_progetto     || null,
+              tipo_attivita:    ai.tipo_attivita     || null,
+              portafoglio:      ai.portafoglio       || null,
+              canale:           ai.canale            || null,
+              spesa_societaria: ai.spesa_societaria  || null,
+              flusso:           ai.flusso            || null,
+              youdox:           ai.youdox            || false,
               ai_categorizzato: true,
             }).eq('id', chunk[j].id)
             categorizzati++
@@ -335,11 +340,16 @@ export default function PrimaNotaPage() {
             const ai = risultati.find((r: any) => r.indice === j)
             if (ai && chunk[j]._id) {
               await (supabase as any).from('prima_nota').update({
-                voci_bilancio:   ai.voci_bilancio   || null,
-                macro_categoria: ai.macro_categoria  || null,
-                attivita:        ai.attivita         || null,
-                nome_progetto:   ai.nome_progetto    || null,
-                youdox:          ai.youdox           || false,
+                voci_bilancio:    ai.voci_bilancio    || null,
+                macro_categoria:  ai.macro_categoria   || null,
+                attivita:         ai.attivita          || null,
+                nome_progetto:    ai.nome_progetto     || null,
+                tipo_attivita:    ai.tipo_attivita     || null,
+                portafoglio:      ai.portafoglio       || null,
+                canale:           ai.canale            || null,
+                spesa_societaria: ai.spesa_societaria  || null,
+                flusso:           ai.flusso            || null,
+                youdox:           ai.youdox            || false,
                 ai_categorizzato: true,
               }).eq('id', chunk[j]._id)
             }
