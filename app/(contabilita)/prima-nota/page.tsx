@@ -101,9 +101,12 @@ export default function PrimaNotaPage() {
 
   useEffect(() => { fetchMovimenti() }, [filtroFlusso, filtroCassa, filtroMese, filtroAnno])
   useEffect(() => {
-    // Ogni volta che i movimenti cambiano, ricontiamo quelli senza categoria
-    const count = movimenti.filter((m: any) => !m.macro_categoria).length
-    setSenzaCatCount(count)
+    // Conta globalmente nel DB — indipendente dai filtri anno/mese attivi
+    ;(supabase as any)
+      .from('prima_nota')
+      .select('id', { count: 'exact', head: true })
+      .is('macro_categoria', null)
+      .then(({ count }: any) => setSenzaCatCount(count || 0))
   }, [movimenti])
 
   async function fetchMovimenti() {
