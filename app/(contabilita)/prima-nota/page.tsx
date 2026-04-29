@@ -299,7 +299,12 @@ export default function PrimaNotaPage() {
 
         movimentiRaw.push({
           trimestre, mese, anno,
-          competenza: isPNFormat && mp.competenza_col >= 0 ? getVal(row, mp.competenza_col) : null,
+          // Competenza: legge dall'Excel, fallback all'anno della data contabile
+          competenza: (() => {
+            const v = isPNFormat && mp.competenza_col >= 0 ? getVal(row, mp.competenza_col) : null
+            if (v) return Number(v)
+            return anno || null
+          })(),
           data_contabile: dataContabile, data_valuta: dataValuta,
           importo, flusso, cassa,
           n_protocollo: isPNFormat && mp.n_protocollo >= 0 ? (getVal(row, mp.n_protocollo) ? String(getVal(row, mp.n_protocollo)) : null) : null,
@@ -331,7 +336,7 @@ export default function PrimaNotaPage() {
       // ── STEP 2: categorizza in batch da 10, aggiorna il DB per id ────────
       const daCateg = movimentiRaw
         .map((m, i) => ({ ...m, _id: savedIds[i] }))
-        .filter(m => !m.macro_categoria && !m.voci_bilancio && m._id)
+        .filter(m => m._id && (!m.macro_categoria || !m.voci_bilancio))
 
       if (daCateg.length > 0) {
         setStep(`🤖 AI categorizza ${daCateg.length} movimenti...`)
@@ -343,19 +348,19 @@ export default function PrimaNotaPage() {
           for (let j = 0; j < chunk.length; j++) {
             const ai = risultati.find((r: any) => r.indice === j)
             if (ai && chunk[j]._id) {
-              await (supabase as any).from('prima_nota').update({
-                voci_bilancio:    ai.voci_bilancio    || null,
-                macro_categoria:  ai.macro_categoria   || null,
-                attivita:         ai.attivita          || null,
-                nome_progetto:    ai.nome_progetto     || null,
-                tipo_attivita:    ai.tipo_attivita     || null,
-                portafoglio:      ai.portafoglio       || null,
-                canale:           ai.canale            || null,
-                spesa_societaria: ai.spesa_societaria  || null,
-                flusso:           ai.flusso            || null,
-                youdox:           ai.youdox            || false,
-                ai_categorizzato: true,
-              }).eq('id', chunk[j]._id)
+              const aggiornamenti: any = { ai_categorizzato: true }
+              // Sovrascrive solo i campi ancora vuoti — preserva quelli letti dall'Excel
+              if (!chunk[j].voci_bilancio    && ai.voci_bilancio)    aggiornamenti.voci_bilancio    = ai.voci_bilancio
+              if (!chunk[j].macro_categoria  && ai.macro_categoria)   aggiornamenti.macro_categoria  = ai.macro_categoria
+              if (!chunk[j].attivita         && ai.attivita)          aggiornamenti.attivita         = ai.attivita
+              if (!chunk[j].nome_progetto    && ai.nome_progetto)     aggiornamenti.nome_progetto    = ai.nome_progetto
+              if (!chunk[j].tipo_attivita    && ai.tipo_attivita)     aggiornamenti.tipo_attivita    = ai.tipo_attivita
+              if (!chunk[j].portafoglio      && ai.portafoglio)       aggiornamenti.portafoglio      = ai.portafoglio
+              if (!chunk[j].canale           && ai.canale)            aggiornamenti.canale           = ai.canale
+              if (!chunk[j].spesa_societaria && ai.spesa_societaria)  aggiornamenti.spesa_societaria = ai.spesa_societaria
+              if (!chunk[j].flusso           && ai.flusso)            aggiornamenti.flusso           = ai.flusso
+              if (!chunk[j].youdox)                                   aggiornamenti.youdox           = ai.youdox || false
+              await (supabase as any).from('prima_nota').update(aggiornamenti).eq('id', chunk[j]._id)
             }
           }
 
