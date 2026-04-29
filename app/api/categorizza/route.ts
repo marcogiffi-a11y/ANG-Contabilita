@@ -33,7 +33,13 @@ VOCI DI BILANCIO COMUNI:
 - Poste Italiane → Valori Bollati | Costi di Gestione
 - UnipolTech/RC Polizza → Assicurazioni Varie | Costi di Gestione
 
-ATTIVITÀ: INGEGNERIA o GENERAL CONTRACTOR
+ATTIVITÀ: "INGEGNERIA" per progetti di ingegneria, "GENERAL CONTRACTOR" per cantieri FTV
+
+PORTAFOGLIO: "OPEX" per costi operativi ricorrenti (affitto, stipendi, utenze, telefonia...), "CAPEX" per acquisti/investimenti (attrezzature, software una tantum...), "ENTRATE" per ricavi — null se non classificabile
+
+CANALE: "CONTABILE" per operazioni bancarie normali, "CASSETTO FISCALE" per F24/tributi/INPS, "ADE" per Agenzia delle Entrate — null altrimenti
+
+SPESA SOCIETARIA: categoria sintetica della spesa, es. "Affitto", "Stipendio", "Carburante", "Telefonia", "Utenze", "Software", "Assicurazione", "Spese Bancarie", "Tributi", "Consulenze", "Forniture Ufficio", "Rimborso Spese", "Pubblicità" — null se entrata o non classificabile
 `
 
 export async function POST(req: NextRequest) {
@@ -124,7 +130,7 @@ export async function POST(req: NextRequest) {
         const prompt = `${LEGENDA_CONTEXT}${esempioContesto}
 
 Categorizza questi ${daChiedereAI.length} movimenti. Rispondi SOLO con JSON array:
-[{"indice":0,"voci_bilancio":"...","macro_categoria":"...","spesa_societaria":"...","flusso":"ENTRATE|USCITE|GIROCONTO","attivita":"INGEGNERIA|GENERAL CONTRACTOR|null","nome_progetto":null,"tipo_attivita":null,"youdox":true|false}, ...]
+[{"indice":0,"voci_bilancio":"...","macro_categoria":"...","spesa_societaria":"...","flusso":"ENTRATE|USCITE|GIROCONTO","attivita":"INGEGNERIA|GENERAL CONTRACTOR|null","nome_progetto":null,"tipo_attivita":null,"portafoglio":"OPEX|CAPEX|ENTRATE|null","canale":"CONTABILE|CASSETTO FISCALE|ADE|null","youdox":true|false}, ...]
 
 MOVIMENTI:
 ${daChiedereAI.map(({ idx, mov }, localIdx) =>
