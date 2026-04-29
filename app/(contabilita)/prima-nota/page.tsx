@@ -42,6 +42,32 @@ function getTrimestre(m: string) {
   return 'Q4'
 }
 
+// ── Helpers per import anti-timeout ────────────────────────────────────────
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+async function categorizzaConRetry(movimenti: any[]): Promise<any[]> {
+  const call = () => fetch('/api/categorizza', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ movimenti }),
+  }).then(r => r.json())
+
+  try {
+    const res = await call()
+    if (res.risultati) return res.risultati
+    throw new Error(res.error || 'Risposta vuota')
+  } catch {
+    // Riprova una volta dopo 1 secondo
+    await sleep(1000)
+    try {
+      const res2 = await call()
+      return res2.risultati ?? []
+    } catch {
+      return [] // Batch saltato — i movimenti restano senza categoria
+    }
+  }
+}
+
 export default function PrimaNotaPage() {
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -223,40 +249,47 @@ export default function PrimaNotaPage() {
         })
       }
 
-      const daCateg = movimentiRaw.filter(m => !m.macro_categoria && !m.voci_bilancio)
+      // ── STEP 1: salva subito tutti i movimenti, ottieni gli id ──────────
+      setStep(`💾 Salvataggio ${movimentiRaw.length} movimenti...`)
+      const savedIds: string[] = []
+      for (let i = 0; i < movimentiRaw.length; i += 50) {
+        const chunk = movimentiRaw.slice(i, i + 50)
+        const { data: ins } = await (supabase as any).from('prima_nota').insert(chunk).select('id')
+        if (ins) savedIds.push(...ins.map((r: any) => r.id))
+      }
+
+      // ── STEP 2: categorizza in batch da 10, aggiorna il DB per id ────────
+      const daCateg = movimentiRaw
+        .map((m, i) => ({ ...m, _id: savedIds[i] }))
+        .filter(m => !m.macro_categoria && !m.voci_bilancio && m._id)
+
       if (daCateg.length > 0) {
         setStep(`🤖 AI categorizza ${daCateg.length} movimenti...`)
-        const catRes = await fetch('/api/categorizza', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ movimenti: daCateg })
-        })
-        const { risultati } = await catRes.json()
-        let catIdx = 0
-        for (let i = 0; i < movimentiRaw.length; i++) {
-          if (!movimentiRaw[i].macro_categoria && !movimentiRaw[i].voci_bilancio) {
-            const ai = risultati?.find((r: any) => r.indice === catIdx)
-            if (ai) {
-              movimentiRaw[i].voci_bilancio = ai.voci_bilancio || null
-              movimentiRaw[i].macro_categoria = ai.macro_categoria || null
-              movimentiRaw[i].attivita = movimentiRaw[i].attivita || ai.attivita || null
-              movimentiRaw[i].nome_progetto = movimentiRaw[i].nome_progetto || ai.nome_progetto || null
-              movimentiRaw[i].youdox = movimentiRaw[i].youdox || ai.youdox || false
-              movimentiRaw[i].ai_categorizzato = true
+        const BATCH = 10
+        for (let b = 0; b < daCateg.length; b += BATCH) {
+          const chunk = daCateg.slice(b, b + BATCH)
+          const risultati = await categorizzaConRetry(chunk)
+
+          for (let j = 0; j < chunk.length; j++) {
+            const ai = risultati.find((r: any) => r.indice === j)
+            if (ai && chunk[j]._id) {
+              await (supabase as any).from('prima_nota').update({
+                voci_bilancio:   ai.voci_bilancio   || null,
+                macro_categoria: ai.macro_categoria  || null,
+                attivita:        ai.attivita         || null,
+                nome_progetto:   ai.nome_progetto    || null,
+                youdox:          ai.youdox           || false,
+                ai_categorizzato: true,
+              }).eq('id', chunk[j]._id)
             }
-            catIdx++
           }
+
+          // pausa tra batch per non sovraccaricare
+          if (b + BATCH < daCateg.length) await sleep(400)
         }
       }
 
-      setStep(`💾 Salvataggio ${movimentiRaw.length} movimenti...`)
-      let inseriti = 0
-      for (let i = 0; i < movimentiRaw.length; i += 50) {
-        const batch = movimentiRaw.slice(i, i + 50)
-        const { error } = await (supabase as any).from('prima_nota').insert(batch)
-        if (!error) inseriti += batch.length
-      }
-      showToast(`✅ ${inseriti} movimenti importati!`)
+      showToast(`✅ ${savedIds.length} movimenti importati!`)
       await fetchMovimenti()
     } catch (err: any) {
       showToast(`❌ Errore: ${err.message}`)
