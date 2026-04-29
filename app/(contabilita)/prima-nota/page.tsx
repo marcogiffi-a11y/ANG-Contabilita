@@ -765,10 +765,17 @@ export default function PrimaNotaPage() {
           )}
         </div>
 
-        {/* Scrollbar orizzontale — più grande e visibile */}
+        {/* Scrollbar orizzontale — fissa in fondo, sempre visibile */}
         <div id="scroll-mirror"
-          style={{ overflowX: 'auto', overflowY: 'hidden', height: 14, marginTop: 2, background: '#f1f5f9', borderRadius: '0 0 8px 8px', border: '1px solid var(--border)', borderTop: 'none' }}
+          style={{ overflowX: 'scroll', overflowY: 'hidden', height: 18, marginTop: 2 }}
           onScroll={e => { const tbl = document.getElementById('tbl-scroll'); if(tbl) tbl.scrollLeft = (e.target as HTMLDivElement).scrollLeft }}>
+          <style>{`
+            #scroll-mirror::-webkit-scrollbar { height: 12px; }
+            #scroll-mirror::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 6px; }
+            #scroll-mirror::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; }
+            #scroll-mirror::-webkit-scrollbar-thumb:hover { background: #64748b; }
+            #tbl-scroll::-webkit-scrollbar { height: 0px; width: 0px; }
+          `}</style>
           <div style={{ width: COLS.reduce((s, c) => s + c.w, 0) + 'px', height: 1 }} />
         </div>
 
