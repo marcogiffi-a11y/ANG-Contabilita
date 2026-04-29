@@ -86,6 +86,18 @@ export default function PrimaNotaPage() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [senzaCatCount, setSenzaCatCount] = useState(0)
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
+
+  // ── Valori validi per i dropdown — dalla Legenda ─────────────────────────
+  const LEGENDA: Record<string, string[]> = {
+    macro_categoria: ['Anticipi e Rimborsi','Benefit','Benefit MB','Benefit MG','Compensi Dipendenti','Compensi Esterni','Compenso MB','Compenso MG','Costi Amministrativi','Costi General Contractor','Costi di Gestione','Erario Statale','Formazione','Gestione Amministrativa','INPS','Introiti Aziendali','Investimenti Materiali','Investimento Aziendale','Investimento Finanziario','Investimento Reputazionale','Marketing','Provvigioni Agenti','Tributi'],
+    voci_bilancio: ['Abbonamenti, libri, riviste e banche dati','Acquisto Beni inferiori a 516,46 euro','Aggiornamento e Manutenzione Software','Altri debiti v/soci','Altri oneri diversi di gestione','Apparecchiature Telefoniche','Assicurazioni Varie','Attrezzatura Varia e Minuta','Cancelleria','Canoni di Locazione','Canoni di Manutenzione su altri beni terzi','Canoni di Manutenzione su auto proprie','Carburanti e Lubrificanti','Carta di Credito Prepagata','Compensi amministratori','Consulente del Lavoro','Consulenze Commerciali','Consulenze Tecniche','Consulenze amministrative e fiscali',"Costi per licenze d'uso software",'Debiti per pagamento carte di credito','Diritto Annuale CCIAA','Energia Elettrica',"Erario c/credito d'imposta",'Erario c/ritenute su lavoro dipendente','Finanziamenti Infruttiferi Soci','Fondo Cassa','Impianti Specifici','Imposta di Bollo','Inarcassa','Indumenti di Lavoro','Introiti','Lavorazioni di Terzi','Licenze Software tempo det',"Macchine elettroniche D'Ufficio",'Manutenzione e Riparazioni Hardware','Manutenzioni e riparazioni altri beni terzi','Manutenzioni e riparazioni auto terzi','Marketing e Pubblicità','Materiale di Pulizia','Materiali di Manutenzione','Materie di consumo','Merci c/Acquisto','Migliorie e spese incrementative beni terzi','Mobili e Arredi','Noleggio Mezzi Aziendali','Oneri Sociali','Retribuzioni Dipendenti','Rimborso NC','Rimborso Professionisti','Ristorante','Sanzioni Amministrative','Somministrazioni in Ufficio','Spese Amministrative','Spese Condominiali su Immobili diterzi','Spese Telefonia','Spese di Pulizia','Spese di Rappresentanza','Spese legali e notarili','Spese non documentate','Spese per Addestramento e formazione personale','Strumenti di Lavoro','Tassa Vidimazione libri Sociali','Viaggi e Trasferte'],
+    canale: ['CONTABILE','CASSETTO FISCALE','ADE'],
+    spesa_societaria: ['Abbonamenti Ufficio','Accantonamento','Addebito Carta di credito','Adempimenti Società','Affitto Ufficio','Anticipi, Rimborsi e Storno Fattura','Arredo Ufficio','Assicurazione','Attività General Contractor','Attività Ingegneria','Auto aziendale','Beni Materiali Barone Marco','Beni Materiali Cavallaro Alessia','Beni Materiali Di Maita Claudia','Beni Materiali Giffi Marco','Cancelleria Ufficio','Carburante','Casello','Certificazioni','Commissioni bancarie','Compenso Barone Marco','Compenso Bartoloni Valentina','Compenso Cavallaro Alessia','Compenso Cavallaro Alessia IVA','Compenso Collaboratori - Occasionali','Compenso Di Maita Claudia','Compenso Di Maita Claudia IVA','Compenso Giffi Marco','Compenso Luca Greco','Compenso Sara Rao','Compravendita Crediti Fiscali','Condominio','Consulenza Grafica','Consulenza Tecnica','Contributi','Corsi di formazione','Costi Una Tantum - Investimento Ufficio','Costi gestione conto corrente','Costi una Tantum - Investimento Marketing','Costi una Tantum - Investimento organizzazione aziendale','FTV - Acquisto Materiali','FTV - Compenso Collaboratori - Occasionali','FTV - Installazione Impianti','FTV - Oneri Amministrativi','FTV - Provvigioni Commerciali','FTV - Spese Professionali','FTV - Spese di Trasporto','Fondo Cassa','Gestione Fiscale','Gestione Risorse Umane','Giroconto','Imposta di bollo','Imposte e Tasse','Investimenti Finanziari','Iscrizione Albo Fornitori','Lavori Straordinari Condominio','Lavori edili Ufficio','Liquidazione crediti','Manutenzione Auto','Manutenzione Ufficio','Materiale di Consumo Ufficio','Materiale didattico','Noleggio Macchinari','Omaggi a Clienti','Oneri Amministrativi','Oneri finanziari','Oneri per Cessione del Credito Fiscale','Patrimonio deperibile','Prelievo','Prestito infruttifero','Provvigioni Commerciali','Pulizia Ufficio','Ricarica carta prepagata','Ristorante per Lavoro',"Ritenuta d'acconto",'Sanzioni Ravvedimenti Interessi','Software','Somministrazione Ufficio','Spese Legali','Spese Notarili','Spese Professionali','Spese per Trasferta','Strumenti di Lavoro','Utenze luce e gas','Utenze telefoniche','Valori Bollati','Versamento','Versamento Assegni'],
+    attivita: ['INGEGNERIA','GENERAL CONTRACTOR'],
+    flusso: ['ENTRATE','USCITE','GIROCONTO'],
+    portafoglio: ['Athena','Al Sistemi Srls','Alteren','ASSI TECK SRL','Audino','B.E. IMPIANTI di Bastianelli Emiliano','Barone','C.a.r.Go. Srl','DSC Srl','Edil Clima','Elle Gi','Fratticci','Guido Martini','Idrocalor SRL','Leroy Merlin','Mario Sulpizio','Mazzuferi Mirco','Pacelli','Porfiri Architects','Quartodipalo','Romana Finestre','Rosati','SmartCity','Veggi Arnaldo','TermoExpert','Trinchini Claudia','IDEA SRL'],
+  }
 
   const ANNI = ['2024', '2025', '2026']
 
@@ -177,6 +189,53 @@ export default function PrimaNotaPage() {
     }
     setImporting(false)
     setStep('')
+  }
+
+  async function salvaModifica(id: string, field: string, value: string) {
+    setEditingCell(null)
+    const { error } = await (supabase as any)
+      .from('prima_nota')
+      .update({ [field]: value || null })
+      .eq('id', id)
+    if (!error) {
+      setMovimenti(prev => prev.map(m => m.id === id ? { ...m, [field]: value || null } : m))
+    } else {
+      showToast('❌ Errore salvataggio')
+    }
+  }
+
+  // ── Cella editabile con dropdown ────────────────────────────────────────
+  function CellaCategoria({ m, field, width }: { m: any; field: string; width: number }) {
+    const val = m[field]
+    const isEditing = editingCell?.id === m.id && editingCell?.field === field
+    const opts = LEGENDA[field] || []
+
+    if (isEditing) {
+      return (
+        <td style={{ padding: '2px 4px', width, minWidth: width }}>
+          <select
+            autoFocus
+            defaultValue={val || ''}
+            onChange={e => salvaModifica(m.id, field, e.target.value)}
+            onBlur={() => setEditingCell(null)}
+            style={{ width: '100%', fontSize: 11, padding: '4px 6px', border: '2px solid var(--accent)', borderRadius: 5, background: 'white', outline: 'none' }}>
+            <option value="">— nessuno —</option>
+            {opts.map((o: string) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </td>
+      )
+    }
+
+    return (
+      <td
+        onClick={() => setEditingCell({ id: m.id, field })}
+        title="Clicca per modificare"
+        style={{ padding: '8px 10px', width, minWidth: width, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {val
+          ? <span style={{ borderBottom: '1px dashed #cbd5e1' }}>{val}</span>
+          : <span style={{ color: '#f59e0b', fontSize: 10, fontWeight: 600 }}>✏️ —</span>}
+      </td>
+    )
   }
 
   async function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -676,11 +735,9 @@ export default function PrimaNotaPage() {
                       <td style={{ padding: '8px 10px', color: 'var(--muted)', width: 90 }}>{m.competenza || '—'}</td>
                       <td style={{ padding: '8px 10px', whiteSpace: 'nowrap', width: 110 }}>{fmtData(m.data_contabile)}</td>
                       <td style={{ padding: '8px 10px', textAlign: 'center', width: 70 }}>{m.youdox ? '✅' : '⬜'}</td>
-                      <td style={{ padding: '8px 10px', width: 120 }}>
-                        {m.canale ? <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: '#f1f5f9', color: 'var(--muted)', fontWeight: 700 }}>{m.canale}</span> : '—'}
-                      </td>
-                      <td style={{ padding: '8px 10px', width: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.voci_bilancio || '—'}</td>
-                      <td style={{ padding: '8px 10px', width: 160, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.macro_categoria || '—'}</td>
+                      <CellaCategoria m={m} field="canale" width={120} />
+                      <CellaCategoria m={m} field="voci_bilancio" width={200} />
+                      <CellaCategoria m={m} field="macro_categoria" width={160} />
                       <td style={{ padding: '8px 10px', color: 'var(--muted)', fontSize: 10, width: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.n_protocollo || '—'}</td>
                       <td style={{ padding: '8px 10px', color: 'var(--muted)', whiteSpace: 'nowrap', width: 100 }}>{fmtData(m.data_valuta)}</td>
                       <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'right', whiteSpace: 'nowrap', width: 110, color: m.flusso === 'ENTRATE' ? 'var(--green)' : 'var(--red)' }}>
@@ -692,16 +749,14 @@ export default function PrimaNotaPage() {
                       <td style={{ padding: '8px 10px', width: 100 }}>
                         <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'var(--accent-light)', color: 'var(--accent)' }}>{m.cassa || '—'}</span>
                       </td>
-                      <td style={{ padding: '8px 10px', width: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{m.spesa_societaria || '—'}</td>
-                      <td style={{ padding: '8px 10px', width: 90 }}>
-                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: m.flusso === 'ENTRATE' ? 'var(--green-light)' : m.flusso === 'USCITE' ? 'var(--red-light)' : '#f1f5f9', color: m.flusso === 'ENTRATE' ? 'var(--green)' : m.flusso === 'USCITE' ? 'var(--red)' : 'var(--muted)' }}>{m.flusso || '—'}</span>
-                      </td>
-                      <td style={{ padding: '8px 10px', width: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.attivita || '—'}</td>
+                      <CellaCategoria m={m} field="spesa_societaria" width={180} />
+                      <CellaCategoria m={m} field="flusso" width={90} />
+                      <CellaCategoria m={m} field="attivita" width={140} />
                       <td style={{ padding: '8px 10px', width: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.nome_progetto ? <span style={{ fontSize: 10, background: 'var(--accent-light)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 20 }}>{m.nome_progetto}</span> : '—'}
                       </td>
                       <td style={{ padding: '8px 10px', width: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{m.tipo_attivita || '—'}</td>
-                      <td style={{ padding: '8px 10px', width: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.portafoglio || '—'}</td>
+                      <CellaCategoria m={m} field="portafoglio" width={130} />
                     </tr>
                   ))}
                 </tbody>
@@ -709,8 +764,10 @@ export default function PrimaNotaPage() {
             </div>
           )}
         </div>
-        {/* Scrollbar orizzontale mirror visibile */}
-        <div id="scroll-mirror" style={{ overflowX: 'auto', overflowY: 'hidden', height: 16, marginTop: 0, borderTop: '1px solid var(--border)' }}
+
+        {/* Scrollbar orizzontale — più grande e visibile */}
+        <div id="scroll-mirror"
+          style={{ overflowX: 'auto', overflowY: 'hidden', height: 14, marginTop: 2, background: '#f1f5f9', borderRadius: '0 0 8px 8px', border: '1px solid var(--border)', borderTop: 'none' }}
           onScroll={e => { const tbl = document.getElementById('tbl-scroll'); if(tbl) tbl.scrollLeft = (e.target as HTMLDivElement).scrollLeft }}>
           <div style={{ width: COLS.reduce((s, c) => s + c.w, 0) + 'px', height: 1 }} />
         </div>
