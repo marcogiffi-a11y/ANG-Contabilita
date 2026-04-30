@@ -113,14 +113,6 @@ export default function PrimaNotaPage() {
 
   useEffect(() => { fetchMovimenti() }, [filtroFlusso, filtroCassa, filtroMese, filtroAnno])
   useEffect(() => {
-    const el = document.getElementById('tbl-scroll')
-    const thumb = document.getElementById('custom-thumb')
-    const bar = document.getElementById('custom-bar')
-    if (!el || !thumb || !bar) return
-    const thumbW = Math.max(40, bar.offsetWidth * (el.clientWidth / el.scrollWidth))
-    thumb.style.width = thumbW + 'px'
-  }, [filtrati])
-  useEffect(() => {
     ;(supabase as any)
       .from('prima_nota')
       .select('id', { count: 'exact', head: true })
@@ -518,6 +510,16 @@ export default function PrimaNotaPage() {
 
   const totEnt = filtrati.filter((m: any) => m.flusso === 'ENTRATE').reduce((s: number, m: any) => s + (m.importo || 0), 0)
   const totUsc = filtrati.filter((m: any) => m.flusso === 'USCITE').reduce((s: number, m: any) => s + Math.abs(m.importo || 0), 0)
+
+  // Ridimensiona il thumb della scrollbar custom quando cambia la lista filtrata
+  useEffect(() => {
+    const el = document.getElementById('tbl-scroll')
+    const thumb = document.getElementById('custom-thumb')
+    const bar = document.getElementById('custom-bar')
+    if (!el || !thumb || !bar) return
+    const thumbW = Math.max(40, bar.offsetWidth * (el.clientWidth / el.scrollWidth))
+    thumb.style.width = thumbW + 'px'
+  }, [filtrati])
 
   const COLS = [
     { key: 'sel', label: '', w: 40 },
