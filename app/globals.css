@@ -85,6 +85,25 @@ input, select, textarea {
   display: inline-block;
 }
 
+/* Scrollbar globale pagina */
+::-webkit-scrollbar {
+  height: 12px;
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+::-webkit-scrollbar-corner {
+  background: #e2e8f0;
+}
+
 /* Scrollbar tabella Prima Nota — Opzione A */
 #tbl-scroll::-webkit-scrollbar {
   height: 12px;
