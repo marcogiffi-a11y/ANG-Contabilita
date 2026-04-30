@@ -714,7 +714,7 @@ export default function PrimaNotaPage() {
             </div>
           ) : (
             <div style={{ position: 'relative' }}>
-              <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}
                 onScroll={() => {
                   const el = document.getElementById('tbl-scroll')
                   const thumb = document.getElementById('custom-thumb')
@@ -726,7 +726,7 @@ export default function PrimaNotaPage() {
                   thumb.style.width = thumbW + 'px'
                   thumb.style.left = (ratio * (barW - thumbW)) + 'px'
                 }}>
-                <style>{`#tbl-scroll::-webkit-scrollbar{display:none}`}</style>
+                <style>{`#tbl-scroll::-webkit-scrollbar:horizontal{display:none}`}</style>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
