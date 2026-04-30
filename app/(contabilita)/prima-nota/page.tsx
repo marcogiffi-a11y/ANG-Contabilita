@@ -770,16 +770,8 @@ export default function PrimaNotaPage() {
                 </tbody>
               </table>
             </div>
-          </div>
           )}
         </div>
-
-          <style>{`
-            #tbl-scroll::-webkit-scrollbar { height: 20px; }
-            #tbl-scroll::-webkit-scrollbar-track { background: #cbd5e1; border-radius: 10px; }
-            #tbl-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; border: 3px solid #cbd5e1; }
-            #tbl-scroll::-webkit-scrollbar-thumb:hover { background: #1e293b; }
-          `}</style>
 
         {filtrati.length > 0 && (
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
