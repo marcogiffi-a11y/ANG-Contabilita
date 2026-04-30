@@ -84,3 +84,24 @@ input, select, textarea {
   animation: spin .6s linear infinite;
   display: inline-block;
 }
+
+/* Scrollbar tabella Prima Nota — Opzione A */
+#tbl-scroll::-webkit-scrollbar {
+  height: 18px;
+  width: 10px;
+}
+#tbl-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 9px;
+}
+#tbl-scroll::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 7px;
+  border: 2px solid #e2e8f0;
+}
+#tbl-scroll::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+#tbl-scroll::-webkit-scrollbar-corner {
+  background: #e2e8f0;
+}
