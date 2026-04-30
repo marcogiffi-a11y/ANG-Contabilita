@@ -705,13 +705,6 @@ export default function PrimaNotaPage() {
             </div>
           ) : (
             <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
-              <style>{`
-                #tbl-scroll::-webkit-scrollbar { height: 12px; width: 12px; }
-                #tbl-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
-                #tbl-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 6px; }
-                #tbl-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
-                #tbl-scroll::-webkit-scrollbar-corner { background: #f1f5f9; }
-              `}</style>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
