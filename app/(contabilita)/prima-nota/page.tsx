@@ -113,7 +113,14 @@ export default function PrimaNotaPage() {
 
   useEffect(() => { fetchMovimenti() }, [filtroFlusso, filtroCassa, filtroMese, filtroAnno])
   useEffect(() => {
-    // Conta globalmente nel DB — indipendente dai filtri anno/mese attivi
+    const el = document.getElementById('tbl-scroll')
+    const thumb = document.getElementById('custom-thumb')
+    const bar = document.getElementById('custom-bar')
+    if (!el || !thumb || !bar) return
+    const thumbW = Math.max(40, bar.offsetWidth * (el.clientWidth / el.scrollWidth))
+    thumb.style.width = thumbW + 'px'
+  }, [filtrati])
+  useEffect(() => {
     ;(supabase as any)
       .from('prima_nota')
       .select('id', { count: 'exact', head: true })
@@ -704,7 +711,20 @@ export default function PrimaNotaPage() {
               {movimenti.length === 0 ? 'Nessun movimento — importa o aggiungi manualmente' : 'Nessun movimento corrisponde ai filtri'}
             </div>
           ) : (
-            <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
+            <div style={{ position: 'relative' }}>
+              <div id="tbl-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                onScroll={() => {
+                  const el = document.getElementById('tbl-scroll')
+                  const thumb = document.getElementById('custom-thumb')
+                  const bar = document.getElementById('custom-bar')
+                  if (!el || !thumb || !bar) return
+                  const ratio = el.scrollLeft / (el.scrollWidth - el.clientWidth)
+                  const barW = bar.offsetWidth
+                  const thumbW = Math.max(40, barW * (el.clientWidth / el.scrollWidth))
+                  thumb.style.width = thumbW + 'px'
+                  thumb.style.left = (ratio * (barW - thumbW)) + 'px'
+                }}>
+                <style>{`#tbl-scroll::-webkit-scrollbar{display:none}`}</style>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'fixed', width: COLS.reduce((s, c) => s + c.w, 0) + 'px' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)', position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
@@ -761,6 +781,47 @@ export default function PrimaNotaPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Scrollbar orizzontale custom */}
+            <div id="custom-bar"
+              style={{ height: 18, background: '#e2e8f0', borderRadius: 9, margin: '6px 0 2px', position: 'relative', cursor: 'pointer' }}
+              onClick={e => {
+                const bar = document.getElementById('custom-bar')
+                const el = document.getElementById('tbl-scroll')
+                const thumb = document.getElementById('custom-thumb')
+                if (!bar || !el || !thumb) return
+                const rect = bar.getBoundingClientRect()
+                const clickX = e.clientX - rect.left
+                const thumbW = thumb.offsetWidth
+                const ratio = Math.max(0, Math.min(1, (clickX - thumbW/2) / (bar.offsetWidth - thumbW)))
+                el.scrollLeft = ratio * (el.scrollWidth - el.clientWidth)
+              }}>
+              <div id="custom-thumb"
+                style={{ position: 'absolute', top: 3, height: 12, background: '#64748b', borderRadius: 6, cursor: 'grab', minWidth: 40, width: '30%', left: 0, transition: 'background .15s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#334155')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#64748b')}
+                onMouseDown={e => {
+                  const thumb = e.currentTarget
+                  const bar = document.getElementById('custom-bar')
+                  const el = document.getElementById('tbl-scroll')
+                  if (!bar || !el) return
+                  const startX = e.clientX
+                  const startLeft = parseFloat(thumb.style.left) || 0
+                  thumb.style.cursor = 'grabbing'
+                  const onMove = (ev: MouseEvent) => {
+                    const barW = bar.offsetWidth
+                    const thumbW = thumb.offsetWidth
+                    const newLeft = Math.max(0, Math.min(barW - thumbW, startLeft + ev.clientX - startX))
+                    thumb.style.left = newLeft + 'px'
+                    el.scrollLeft = (newLeft / (barW - thumbW)) * (el.scrollWidth - el.clientWidth)
+                  }
+                  const onUp = () => { thumb.style.cursor = 'grab'; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+                  window.addEventListener('mousemove', onMove)
+                  window.addEventListener('mouseup', onUp)
+                  e.preventDefault()
+                }} />
+            </div>
+          </div>
           )}
         </div>
 
